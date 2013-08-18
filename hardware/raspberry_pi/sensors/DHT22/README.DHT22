@@ -1,0 +1,1 @@
+DHT22 is a Temperature and Humidity sensor. It requires the binary Adafruit_DHT to communicate with the Rasperry Pi

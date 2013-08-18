@@ -1,0 +1,65 @@
+#!/bin/bash
+PIDFILE="/var/log/carbon/carbon-cache.pid"
+LOGFILE="/var/log/carbon/carbon-cache.log"
+RUNSTR="/opt/graphite/bin/carbon-cache.py start"
+STORAGE_INIT=/var/log/graphite/carbon_storage_initialized
+
+export GRAPHITE_STORAGE_DIR=/var/log/graphite/storage/
+mkdir /var/log/graphite > /dev/null 2>&1
+mkdir /var/log/graphite/storage > /dev/null 2>&1
+mkdir /var/log/carbon > /dev/null 2>&1
+
+
+#Die here unless carbon storage has been initialized
+#Confirmed by existence of $STORAGE_INIT marker
+if [ ! -e $STORAGE_INIT ]
+then
+  echo "Not ready yet..."
+  /sbin/init_carbon_storage
+  exit 1
+fi
+
+
+PID=`cat $PIDFILE`
+#first, check if there is a PID written and if that is the process
+
+#env
+
+if [ x$PID == x ]
+then
+ #if no PID (file), check the old-fashioned way
+ PID=`ps aux | grep "${RUNSTR}" | grep -v grep | awk '{print $2}'`
+ if [ x$PID == x ]
+ then
+  #if still nothing, start app and write pid. store PID value as well.
+  echo "Start!"
+  $RUNSTR > $LOGFILE 2>&1 &
+  PID=$!
+ fi
+ #There was no PID file, need to make one.
+ echo $PID > $PIDFILE
+else
+ #there was a PID, validate process is running:
+ #get the process at PID.
+ #get only the line with the PID on it (not the header).
+ #Print the PID, and the RUNSTR portion of the command.
+ #Grep for RUNSTR.
+ #Print PID (first column now).
+ VALIDATE=`ps l $PID | grep $PID | awk '{print $3,$14,$15}' | grep "${RUNSTR}" | awk '{print $1}'`
+ if [ x$VALIDATE == x ] || [ $VALIDATE != $PID ]
+ then
+  echo "Process not running on $PID"
+  #Process is NOT running at that pid. Make sure it isn't running somewhere else...
+  PID=`ps aux | grep "${RUNSTR}" | grep -v grep | awk '{print $2}'`
+  if [ x$PID == x ]
+  then
+   #if still nothing, start app and write pid. store PID value as well.
+   echo "Start!"
+   $RUNSTR > $LOGFILE 2>&1 &
+   PID=$!
+  fi
+  echo "Process running on $PID"
+  echo $PID > $PIDFILE
+ fi
+fi
+

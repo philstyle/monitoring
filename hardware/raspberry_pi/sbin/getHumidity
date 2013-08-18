@@ -1,0 +1,53 @@
+#!/bin/bash
+EXECUTABLE=/sbin/Adafruit_DHT
+CURDIR=`pwd`
+HOST=`cat /etc/hostname`
+
+function getHumidity {
+  TYPE=$1
+  PORT=$2
+  OUTPUT=`${EXECUTABLE} ${TYPE} ${PORT} | grep "Temp" | grep "Hum"`
+  TEMPC=`echo ${OUTPUT} | awk '{print $3}'`
+  COUNT=0
+  while [ x$TEMPC == x ]
+  do
+    COUNT=$(($COUNT + 1))
+    if [ $COUNT -gt "5" ]
+    then
+      #device not responding
+      echo `date +%F_%X` "${SENSOR} not responding. Skipping..."
+      return 1
+    fi
+    sleep 2
+    #echo `date +%F_%X` "trying again... "$OUTPUT
+    OUTPUT=`${EXECUTABLE} ${TYPE} ${PORT} | grep "Temp" | grep "Hum"`
+    TEMPC=`echo $OUTPUT | awk '{print $3}'`
+
+  done
+  FARENHEIT=$(echo "scale=2;((9/5) * $TEMPC) + 32"|bc)
+  INT_TEMP=`echo "(${FARENHEIT}/1)"|bc`
+  if [ $INT_TEMP -lt "-40" ] || [ $INT_TEMP -gt "250" ]
+  then
+    #bad temperature
+    echo `date +%F_%X` "Bad temp from ${TYPE} ${PORT}: ${FARENHEIT} F"
+  else
+    #echo "$FARENHEIT F"
+    echo "${HOST}.DHT22.${PORT}.Temp" $FARENHEIT `date +%s` | nc localhost 2013
+  fi
+
+  HUMIDITY=`echo ${OUTPUT} | awk '{print $7}'`
+  INT_HUM=`echo "(${HUMIDITY}/1)"|bc`
+  if [ $INT_HUM -lt "0" ] || [ $INT_HUM -gt "100" ]
+  then
+    #bad humidity
+    echo `date +%F_%X` "Bad humidity from ${TYPE} ${PORT}: ${HUMIDITY} %"
+  else
+    #echo "$HUMIDITY %"
+    echo "${HOST}.DHT22.${PORT}.Hum" $HUMIDITY `date +%s` | nc localhost 2013
+  fi
+
+}
+
+
+
+getHumidity $1 $2

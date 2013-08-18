@@ -1,0 +1,14 @@
+#!/bin/bash
+
+BASEDIR="/var/log/graphite/log"
+
+for folder in `ls -1 ${BASEDIR}`
+do
+  for subfolder in `ls -1 ${BASEDIR}/${folder}`
+  do
+    for oldlog in `ls -1 ${BASEDIR}/${folder}/${subfolder} | grep ".log."`
+    do
+      rm -f ${BASEDIR}/${folder}/${subfolder}/${oldlog}
+    done
+  done
+done

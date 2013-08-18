@@ -1,0 +1,3 @@
+The BeagleBone Black is used as a relay station for data. Should use RAM and synology network mount for storage.
+
+Will run carbon-cache in RAM (tmpfs) 

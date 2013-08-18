@@ -1,0 +1,39 @@
+#!/bin/bash
+
+#THIS SHOULD BE RUN BEFORE CARBON CACHE IS STARTED
+#WILL OVERWRITE ANY EXISTING CARBON STORAGE
+#Will need to block on access to mothership
+
+#Assume the computer has just booted but Carbon-cache has not started recording yet.
+#Assume the tmpfs 200M disk has been created (mount-point? /media/200M?)
+TMP_TIME=/media/mothership/tmp_time
+STORAGE=/media/mothership/storage
+
+DAT=`date +%N`
+COUNT=0
+#clear out old timestamps if there are any
+rm -f ${TMP_TIME}/*
+
+touch ${TMP_TIME}/${DAT}
+while [ ! -e ${TMP_TIME}/${DAT} ] && [ ${COUNT} -lt 5 ]
+do
+  #we are not yet connected... wait a few and try again
+  sleep 2
+  touch ${TMP_TIME}/${DAT}
+  echo "touch ${TMP_TIME}/${DAT} again"
+  COUNT=$(($COUNT + 1))
+done
+if [ $COUNT -eq 5 ]
+then
+  echo "fail to connect?"
+  exit 1
+fi
+
+#connected. Clean up and copy files.
+rm -f ${TMP_TIME}/${DAT}
+
+rsync -avz ${STORAGE} /var/log/graphite/
+
+
+#Allow carbon-cache to start now. (via checkStartCarbon-cache)
+touch /var/log/graphite/carbon_storage_initialized

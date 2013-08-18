@@ -1,0 +1,6 @@
+#!/bin/bash
+while [ 1 == 1 ]
+do
+  /sbin/getHumidity 22 27 >> /var/log/getHumidity.`date +%j`.log 2>&1
+  sleep 3;
+done

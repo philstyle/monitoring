@@ -1,0 +1,6 @@
+#!/bin/bash
+
+#Backup the whisper storage and restart the server
+
+/sbin/backup_carbon_storage > /dev/null 2>&1
+shutdown -r now

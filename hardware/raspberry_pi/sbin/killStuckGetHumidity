@@ -1,0 +1,18 @@
+#!/bin/bash
+
+BINSTR="/sbin/getHumidity"
+
+#will check 5 times with 5 seconds between each check before killing the process
+PID=`ps aux | egrep -v "scp|rsync|grep|nano|vi|vim" | grep -m1 ${BINSTR} | awk '{print $2}'` 
+echo $PID
+if [ "x$PID" == "x" ]; then echo "PID: ${PID}"; exit 0; fi
+
+for (( c=0; c<5; c++ ))
+do
+  sleep 5
+  NEWPID=`ps aux | egrep -v "scp|rsync|grep|nano|vi|vim" | grep -m1 ${BINSTR} | awk '{print $2}'`
+  if [ "x$NEWPID" == "x" ] || [ "$NEWPID" != "$PID" ]; then echo "NEWPID: ${NEWPID}"; exit 0; fi
+done
+echo "Killing long-running process at $PID"
+kill $PID
+exit 1
